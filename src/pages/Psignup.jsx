@@ -20,19 +20,19 @@ const Psignup = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    // Basic Validation
     if (formData.password !== formData.confirmPassword) {
       alert("Passwords do not match!");
       return;
     }
 
     try {
-      const response = await fetch('http://localhost:8081/players', {
+      // UPDATED: Pointing to your live Render Player Backend
+      const response = await fetch('https://springboot-players-2.onrender.com/players', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           ...formData,
-          status: 'AVAILABLE', // Default status for new players
+          status: 'AVAILABLE', 
           soldPrice: 0,
           boughtBy: null
         }),
@@ -40,15 +40,17 @@ const Psignup = () => {
 
       if (response.ok) {
         alert("Player Profile Created Successfully!");
-        navigate('/dashboard-player');
+        navigate('/login-player'); // Updated to point to your player login path
       } else {
-        alert("Error saving player. Ensure Backend 8081 is running.");
+        const errorText = await response.text();
+        console.error("Server Error:", errorText);
+        alert("Error saving player. Check if the Render service is active.");
       }
     } catch (err) {
       console.error("Fetch error:", err);
+      alert("Network error: Could not reach the live Players API.");
     }
   };
-
   return (
     <div className="flex justify-center items-center min-h-screen bg-slate-100 py-12 px-4">
       <form onSubmit={handleSubmit} className="bg-white p-8 rounded-2xl shadow-2xl w-full max-w-2xl grid grid-cols-1 md:grid-cols-2 gap-4">

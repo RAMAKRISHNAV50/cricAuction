@@ -25,27 +25,28 @@
         }
 
         try {
-        // Destructure to remove confirmPassword before sending to Backend
-        const { confirmPassword, ...dataToSend } = formData;
+    // Destructure to remove confirmPassword before sending to Backend
+    const { confirmPassword, ...dataToSend } = formData;
 
-        const response = await fetch('http://localhost:8080/franchises', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(dataToSend),
-        });
+    // UPDATED: Pointing to your live Render Backend instead of localhost
+    const response = await fetch('https://springboot-franchises.onrender.com/franchises', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(dataToSend),
+    });
 
-        if (response.ok) {
-            alert("Franchise Registered Successfully!");
-            navigate('/login-franchise'); // Navigate to login after success
-        } else {
-            const errorData = await response.text();
-            console.error("Server Error:", errorData);
-            alert("Registration failed. Check if port 8080 is accessible.");
-        }
-        } catch (err) {
-        console.error("Fetch Error:", err);
-        alert("Cannot connect to server. Ensure Spring Boot is running on 8080.");
-        }
+    if (response.ok) {
+        alert("Franchise Registered Successfully!");
+        navigate('/login-franchise'); 
+    } else {
+        const errorData = await response.text();
+        console.error("Server Error:", errorData);
+        alert("Registration failed. Ensure the backend is awake.");
+    }
+} catch (err) {
+    console.error("Fetch Error:", err);
+    alert("Cannot connect to the live server. Check your internet or Render status.");
+}
     };
 
     return (

@@ -10,7 +10,7 @@ const FranchiseDashboard = () => {
 
   const fetchPlayers = async () => {
     try {
-      const response = await fetch('http://localhost:8081/players');
+      const response = await fetch('https://springboot-players-2.onrender.com/players');
       if (!response.ok) throw new Error("Failed to fetch");
       const data = await response.json();
       setPlayers(Array.isArray(data) ? data : []);
@@ -49,7 +49,7 @@ const FranchiseDashboard = () => {
       };
 
       try {
-        const response = await fetch(`http://localhost:8081/players/${player.id}`, {
+        const response = await fetch(`https://springboot-players-2.onrender.com/players/${player.id}`, {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(updatedPlayer),

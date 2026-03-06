@@ -9,7 +9,7 @@ const Flogin = () => {
   const handleLogin = async (e) => {
     e.preventDefault();
     try {
-      const response = await fetch('http://localhost:8080/franchises');
+     const response = await fetch('https://springboot-franchises.onrender.com/franchises');
       const franchises = await response.json();
       
       const user = franchises.find(f => f.email === email && f.password === password);

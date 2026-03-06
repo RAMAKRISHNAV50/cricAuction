@@ -6,16 +6,23 @@ const PlayerDashboard = () => {
   const [player, setPlayer] = useState(null);
   const playerId = localStorage.getItem('playerId'); 
 
-  useEffect(() => {
+ useEffect(() => {
     const fetchPlayerData = async () => {
       try {
-        const response = await fetch(`http://localhost:8081/players/${playerId}`);
+        // UPDATED: Pointing to your live Render Player Backend
+        const response = await fetch(`https://springboot-players-2.onrender.com/players/${playerId}`);
+        
+        if (!response.ok) {
+          throw new Error("Failed to fetch player data");
+        }
+
         const data = await response.json();
         setPlayer(data);
       } catch (error) {
         console.error("Error fetching player:", error);
       }
     };
+    
     if (playerId) fetchPlayerData();
   }, [playerId]);
 
