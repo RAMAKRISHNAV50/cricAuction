@@ -4,27 +4,20 @@ import { Link, useNavigate, useLocation } from 'react-router-dom';
 const Navbar = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  const [isOpen, setIsOpen] = useState(false);
+  const [isOpen,      setIsOpen]      = useState(false);
   const [auctionLive, setAuctionLive] = useState(false);
-  const [scrolled, setScrolled] = useState(false);
-  const [notifications, setNotifications] = useState(0);
+  const [scrolled,    setScrolled]    = useState(false);
 
-  const userRole = localStorage.getItem('userRole');
+  const userRole      = localStorage.getItem('userRole');
   const franchiseName = localStorage.getItem('franchiseName');
-  const userEmail = localStorage.getItem('userEmail');
-
-  // Throttled scroll handler
-  const handleScroll = useCallback(() => {
-    requestAnimationFrame(() => setScrolled(window.scrollY > 20));
-  }, []);
+  const userEmail     = localStorage.getItem('userEmail');
 
   useEffect(() => {
-    const throttledScroll = () => handleScroll();
-    window.addEventListener('scroll', throttledScroll, { passive: true });
-    return () => window.removeEventListener('scroll', throttledScroll);
-  }, [handleScroll]);
+    const onScroll = () => requestAnimationFrame(() => setScrolled(window.scrollY > 20));
+    window.addEventListener('scroll', onScroll, { passive: true });
+    return () => window.removeEventListener('scroll', onScroll);
+  }, []);
 
-  // Auction polling
   useEffect(() => {
     const checkAuction = async () => {
       try {
@@ -32,293 +25,217 @@ const Navbar = () => {
         if (res.ok) {
           const players = await res.json();
           setAuctionLive(Array.isArray(players) && players.some(p => p.status === 'SOLD'));
-          setNotifications(players.filter(p => p.status === 'PENDING').length);
         }
-      } catch { }
+      } catch { /* silent */ }
     };
     checkAuction();
     const interval = setInterval(checkAuction, 10000);
     return () => clearInterval(interval);
   }, []);
 
-  const handleLogout = () => {
+  const handleLogout = useCallback(() => {
     localStorage.clear();
     setIsOpen(false);
     navigate('/');
-  };
+  }, [navigate]);
 
   const isActive = (path) => location.pathname === path;
-  const closeMobileMenu = () => setIsOpen(false);
+  const close    = ()     => setIsOpen(false);
+
+  const navLinkCls = (path, red = false) => {
+    const active = isActive(path);
+    if (red) return `px-4 py-2 text-sm font-bold uppercase tracking-wider transition-all rounded-t-lg border-b-2 ${
+      active ? 'text-red-400 border-red-400 bg-red-500/5' : 'text-slate-300 border-transparent hover:text-red-400 hover:border-red-400/50 hover:bg-red-500/5'
+    }`;
+    return `px-4 py-2 text-sm font-bold uppercase tracking-wider transition-all rounded-t-lg border-b-2 ${
+      active ? 'text-amber-400 border-amber-400 bg-amber-500/5' : 'text-slate-300 border-transparent hover:text-amber-400 hover:border-amber-400/50 hover:bg-slate-800/40'
+    }`;
+  };
 
   return (
     <>
-      {/* Main Navbar - FIXED ALIGNMENT WITH AUCTION BANNER INSIDE */}
-      <nav className={`
-        fixed top-0 left-0 right-0 z-50 backdrop-blur-xl transition-all duration-300 ease-in-out flex flex-col
-        ${scrolled
-          ? 'bg-slate-900/98 shadow-2xl border-b border-slate-700/50'
-          : 'bg-slate-900/90 border-b border-slate-800/30'
-        }
-      `}>
-        {/* Live Auction Banner */}
+      <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@700;900&family=Barlow:wght@400;500;600&display=swap');
+      `}</style>
+
+      <nav className={`fixed top-0 left-0 right-0 z-50 flex flex-col backdrop-blur-xl transition-all duration-300 ${
+        scrolled ? 'bg-slate-900/98 shadow-2xl border-b border-slate-700/50' : 'bg-slate-900/92 border-b border-slate-800/30'
+      }`}>
+
+        {/* Live Banner */}
         {auctionLive && (
-          <div className="bg-gradient-to-r from-red-600 via-red-500 to-red-600 px-4 sm:px-6 py-1.5 text-center backdrop-blur-sm relative z-50 flex-shrink-0">
-            <span className="inline-block animate-pulse font-bold text-xs uppercase tracking-widest text-white">
-              🔴 AUCTION LIVE — BIDS OPEN NOW 🔴
+          <div className="bg-gradient-to-r from-red-700 via-red-500 to-red-700 py-1.5 text-center">
+            <span className="animate-pulse font-bold text-xs uppercase tracking-widest text-white">
+              🔴 &nbsp;AUCTION LIVE — BIDS OPEN NOW&nbsp; 🔴
             </span>
           </div>
         )}
 
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full">
-          <div className="flex items-center justify-between h-16 lg:h-20">
+        {/* Main bar */}
+        <div className="max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8">
+          <div className="flex items-center justify-between h-16 lg:h-[68px]">
 
-            {/* Logo - Left Aligned - FIXED FOR MOBILE */}
-            <Link
-              to="/"
-              className="flex items-center gap-2 flex-shrink-0 group hover:scale-[1.02] transition-transform duration-200"
-              onClick={closeMobileMenu}
-            >
-              <div className="w-10 h-10 lg:w-12 lg:h-12 bg-gradient-to-br from-blue-500 to-blue-700 rounded-xl flex items-center justify-center shadow-lg group-hover:shadow-xl transition-all duration-200 flex-shrink-0">
-                <span className="text-lg lg:text-2xl">🏏</span>
+            {/* Logo */}
+            <Link to="/" onClick={close}
+              className="flex items-center gap-2.5 shrink-0 group hover:scale-[1.02] transition-transform">
+              <div className="w-9 h-9 lg:w-10 lg:h-10 bg-gradient-to-br from-blue-500 to-blue-700 rounded-xl flex items-center justify-center shadow-lg shrink-0">
+                <span className="text-lg lg:text-xl">🏏</span>
               </div>
-              {/* Show text on all screens but smaller on mobile */}
-              <span className="text-lg lg:text-2xl font-black tracking-tight whitespace-nowrap text-white">
+              <span className="text-lg lg:text-2xl font-black tracking-tight text-white whitespace-nowrap"
+                style={{ fontFamily: "'Barlow Condensed', sans-serif" }}>
                 CRIC<span className="text-amber-400">AUCTION</span>
               </span>
-
             </Link>
 
-            {/* Desktop Navigation */}
-            <div className="hidden lg:flex items-center gap-1">
-              {/* Home */}
-              <Link
-                to="/"
-                className={`
-                  flex items-center px-4 py-2 font-semibold text-sm uppercase tracking-wider transition-all duration-200 h-full
-                  ${isActive('/')
-                    ? 'text-amber-400 border-b-2 border-amber-400 bg-amber-500/5'
-                    : 'text-slate-300 hover:text-amber-400 hover:border-amber-400/60 border-b-2 border-transparent hover:bg-slate-800/50'
-                  }
-                  rounded-t-lg
-                `}
-              >
-                HOME
-              </Link>
+            {/* Desktop centre links */}
+            <div className="hidden lg:flex items-center h-full">
+              <Link to="/" className={navLinkCls('/')}>Home</Link>
 
-              {/* Franchise Section */}
-              {userRole === 'FRANCHISE' && (
-                <>
-                  <div className="px-2">
-                    <span className="text-xs text-slate-500 font-medium uppercase tracking-widest -mb-1 block">AUCTION</span>
-                  </div>
-                  <Link
-                    to="/dashboard-franchise"
-                    className={`
-                      flex items-center px-4 py-2 font-semibold text-sm uppercase tracking-wider transition-all duration-200 h-full
-                      ${isActive('/dashboard-franchise')
-                        ? 'text-amber-400 border-b-2 border-amber-400 bg-amber-500/5'
-                        : 'text-slate-300 hover:text-amber-400 hover:border-amber-400/60 border-b-2 border-transparent hover:bg-slate-800/50'
-                      }
-                      rounded-t-lg
-                    `}
-                  >
-                    DASHBOARD
-                  </Link>
-                  <Link
-                    to="/live-auction"
-                    className={`
-                      flex items-center px-4 py-2 font-semibold text-sm uppercase tracking-wider transition-all duration-200 h-full relative
-                      ${isActive('/live-auction')
-                        ? 'text-red-400 border-b-2 border-red-400 bg-red-500/10'
-                        : 'text-slate-300 hover:text-red-400 hover:border-red-400/60 border-b-2 border-transparent hover:bg-red-500/5'
-                      }
-                      rounded-t-lg
-                    `}
-                  >
-                    ⚡ WAR ROOM
-                    {auctionLive && (
-                      <span className="ml-2 px-2 py-0.5 bg-red-500 text-white text-xs font-bold rounded-full animate-pulse shadow-sm">
-                        LIVE
-                      </span>
-                    )}
-                  </Link>
-                </>
-              )}
-
-              {/* Player */}
-              {userRole === 'PLAYER' && (
-                <Link
-                  to="/dashboard-player"
-                  className={`
-                    flex items-center px-4 py-2 font-semibold text-sm uppercase tracking-wider transition-all duration-200 h-full
-                    ${isActive('/dashboard-player')
-                      ? 'text-amber-400 border-b-2 border-amber-400 bg-amber-500/5'
-                      : 'text-slate-300 hover:text-amber-400 hover:border-amber-400/60 border-b-2 border-transparent hover:bg-slate-800/50'
-                    }
-                    rounded-t-lg
-                  `}
-                >
-                  MY STATUS
+              {userRole === 'FRANCHISE' && <>
+                <Link to="/dashboard-franchise" className={navLinkCls('/dashboard-franchise')}>Dashboard</Link>
+                <Link to="/live-auction" className={navLinkCls('/live-auction', true)}>
+                  ⚡ War Room
+                  {auctionLive && <span className="ml-2 px-1.5 py-0.5 bg-red-500 text-white text-[10px] font-black rounded-full animate-pulse">LIVE</span>}
                 </Link>
-              )}
-
-              {/* Admin */}
-              {userRole === 'ADMIN' && (
-                <Link
-                  to="/admin-dashboard"
-                  className={`
-                    flex items-center px-4 py-2 font-semibold text-sm uppercase tracking-wider transition-all duration-200 h-full
-                    ${isActive('/admin-dashboard')
-                      ? 'text-red-400 border-b-2 border-red-400 bg-red-500/10'
-                      : 'text-red-300/80 hover:text-red-400 hover:border-red-400/60 border-b-2 border-transparent hover:bg-red-500/5'
-                    }
-                    rounded-t-lg
-                  `}
-                >
-                  🛡️ CONTROL ROOM
-                </Link>
-              )}
+              </>}
+              {userRole === 'PLAYER' && <Link to="/dashboard-player" className={navLinkCls('/dashboard-player')}>My Status</Link>}
+              {userRole === 'ADMIN'  && <Link to="/admin-dashboard"  className={navLinkCls('/admin-dashboard', true)}>🛡️ Control Room</Link>}
             </div>
 
-            {/* Desktop Actions */}
-            <div className="hidden lg:flex items-center gap-3 xl:gap-4 ml-8 border-l border-slate-800/30 pl-6 xl:pl-8 flex-shrink-0">
-              {!userRole ? (
-                <div className="flex items-center gap-2 xl:gap-3">
-                  <Link to="/login-player" className="text-sm text-slate-300 hover:text-slate-100 font-medium px-2 py-2 transition-colors duration-200">
-                    Register as Player
+            {/* Desktop right actions */}
+            <div className="hidden lg:flex items-center gap-3 shrink-0 pl-6 border-l border-slate-800/40">
+
+              {/* Not logged in — Player Login | Franchise Login | Admin */}
+              {!userRole && (
+                <div className="flex items-center gap-2.5">
+                  <Link to="/login-player"
+                    className="px-4 py-2 text-sm font-semibold text-slate-300 border border-slate-600/60 rounded-xl hover:border-slate-400 hover:text-white hover:bg-slate-800/50 transition-all duration-200 whitespace-nowrap">
+                    Player Login
                   </Link>
-                  <Link
-                    to="/signup-player"
-                    className="px-4 py-2.5 text-sm font-semibold text-white border border-white/20 rounded-lg hover:border-white/40 hover:bg-white/5 transition-all duration-200"
-                  >
-                    REGISTER
-                  </Link>
-                  <Link
-                    to="/login-franchise"
-                    className="px-5 py-2.5 bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-sm font-bold text-white rounded-xl shadow-lg hover:shadow-xl hover:-translate-y-0.5 transition-all duration-200"
-                  >
+                  <Link to="/login-franchise"
+                    className="px-5 py-2 bg-gradient-to-r from-blue-500 to-blue-700 hover:from-blue-600 hover:to-blue-800 text-sm font-bold text-white rounded-xl shadow-lg hover:shadow-blue-500/30 hover:-translate-y-0.5 transition-all duration-200 whitespace-nowrap">
                     Franchise Login
                   </Link>
-                  <Link
-                    to="/admin-login"
-                    className="px-3 py-1.5 text-xs font-bold uppercase tracking-widest text-slate-400 border border-slate-700/50 rounded-md hover:text-red-400 hover:border-red-400/50 hover:bg-red-500/10 transition-all duration-200 ml-1"
-                  >
-                    ⚙ ADMIN
+                  <Link to="/admin-login"
+                    className="px-3 py-1.5 text-[11px] font-bold uppercase tracking-widest text-slate-500 border border-slate-700/50 rounded-lg hover:text-red-400 hover:border-red-400/40 hover:bg-red-500/8 transition-all duration-200 whitespace-nowrap">
+                    ⚙ Admin
                   </Link>
                 </div>
-              ) : (
-                <div className="flex items-center gap-3 xl:gap-4">
-                  {/* Notifications */}
-                  {notifications > 0 && (
-                    <div className="relative">
-                      <button className="p-2 text-slate-300 hover:text-white transition-colors rounded-lg hover:bg-slate-800/50" aria-label="Notifications">
-                        <span className="text-xl">🔔</span>
-                      </button>
-                      <span className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white text-xs font-bold rounded-full flex items-center justify-center shadow-lg animate-pulse">
-                        {notifications}
-                      </span>
-                    </div>
-                  )}
+              )}
 
-                  {/* User Profile */}
-                  <div className="flex items-center gap-3 pr-4 border-r border-slate-800/30">
-                    <div className="w-9 h-9 bg-gradient-to-br from-amber-400 to-amber-500 rounded-full flex items-center justify-center shadow-lg ring-1 ring-amber-400/30">
-                      <span className="text-lg font-semibold">👤</span>
+              {/* Logged in */}
+              {userRole && (
+                <div className="flex items-center gap-3">
+                  {/* User badge */}
+                  <div className="flex items-center gap-2.5 pr-3 border-r border-slate-700/50">
+                    <div className="w-8 h-8 bg-gradient-to-br from-amber-400 to-amber-600 rounded-full flex items-center justify-center shadow ring-1 ring-amber-400/30 shrink-0">
+                      <span className="text-sm">👤</span>
                     </div>
                     <div className="min-w-0">
-                      <div className="text-xs font-bold uppercase tracking-wider truncate text-amber-400">
-                        {userRole === 'FRANCHISE' ? franchiseName?.slice(0, 12) + '...' : userRole === 'ADMIN' ? 'ADMIN' : 'PLAYER'}
+                      <div className={`text-xs font-black uppercase tracking-wider truncate max-w-[140px] ${userRole === 'ADMIN' ? 'text-red-400' : 'text-amber-400'}`}>
+                        {userRole === 'FRANCHISE' ? franchiseName : userRole === 'ADMIN' ? '⚙️ Admin' : 'Player'}
                       </div>
-                      <div className="text-xs text-slate-400 truncate max-w-[120px]">{userEmail}</div>
+                      <div className="text-[10px] text-slate-500 truncate max-w-[140px]">{userEmail}</div>
                     </div>
                   </div>
-
-                  {/* Logout */}
-                  <button
-                    onClick={handleLogout}
-                    className="px-4 py-2 bg-red-500/10 hover:bg-red-500/20 border border-red-500/30 hover:border-red-500 text-red-300 hover:text-red-100 font-semibold text-sm rounded-lg shadow-md hover:shadow-lg hover:scale-[1.02] transition-all duration-200 whitespace-nowrap"
-                  >
-                    LOGOUT
+                  <button onClick={handleLogout}
+                    className="px-4 py-2 text-sm font-bold text-red-300 bg-red-500/10 border border-red-500/30 rounded-xl hover:bg-red-500 hover:text-white hover:border-red-500 transition-all duration-200 whitespace-nowrap">
+                    Logout
                   </button>
                 </div>
               )}
             </div>
 
-            {/* Mobile Hamburger - IMPROVED TOUCH TARGETS */}
-            <button
-              className="lg:hidden p-2 ml-auto flex flex-col gap-1.5 w-12 h-12 min-w-[48px] min-h-[48px] rounded-lg 
-                       hover:bg-slate-800/50 active:bg-slate-700/50 transition-all duration-200"
-              onClick={() => setIsOpen(!isOpen)}
-              aria-label="Toggle mobile menu"
-              aria-expanded={isOpen}
-            >
-              <span className={`w-full h-0.5 bg-white rounded transition-all duration-300 origin-center ease-in-out
-                ${isOpen ? 'rotate-45 translate-y-2 w-6' : 'w-6'}`} />
-              <span className={`w-full h-0.5 bg-white rounded transition-all duration-300 ease-in-out
-                ${isOpen ? 'opacity-0 w-0 translate-x-1' : 'w-6'}`} />
-              <span className={`w-full h-0.5 bg-white rounded transition-all duration-300 origin-center ease-in-out
-                ${isOpen ? '-rotate-45 -translate-y-2 w-6' : 'w-6'}`} />
+            {/* Hamburger — mobile only */}
+            <button onClick={() => setIsOpen(!isOpen)} aria-label="Toggle menu"
+              className="lg:hidden ml-3 w-11 h-11 flex flex-col items-center justify-center gap-1.5 rounded-xl hover:bg-slate-800/60 active:bg-slate-700/60 transition-all shrink-0">
+              <span className={`w-6 h-0.5 bg-white rounded transition-all duration-300 origin-center ${isOpen ? 'rotate-45 translate-y-2' : ''}`} />
+              <span className={`w-6 h-0.5 bg-white rounded transition-all duration-300 ${isOpen ? 'opacity-0 scale-x-0' : ''}`} />
+              <span className={`w-6 h-0.5 bg-white rounded transition-all duration-300 origin-center ${isOpen ? '-rotate-45 -translate-y-2' : ''}`} />
             </button>
           </div>
         </div>
 
-        {/* Mobile Menu - FIXED HEIGHT */}
+        {/* ── MOBILE MENU ────────────────────────────────────────────────────── */}
         {isOpen && (
-          <div className="lg:hidden bg-slate-900/98 border-t border-slate-700/50 backdrop-blur-xl shadow-2xl overflow-y-auto
-            max-h-[calc(100vh-6.5rem)] sm:max-h-[calc(100vh-7.5rem)]">
-            <div className="px-6 pb-8 pt-6 space-y-4">
-              {!userRole ? (
+          <div className="lg:hidden bg-slate-900/98 border-t border-slate-700/50 backdrop-blur-xl overflow-y-auto"
+            style={{ maxHeight: 'calc(100vh - 68px)' }}>
+            <div className="px-5 py-6 flex flex-col gap-3">
+
+              {/* Not logged in */}
+              {!userRole && (
                 <>
-                  <Link
-                    to="/login-player"
-                    className="block w-full text-center py-4 px-6 bg-gradient-to-r from-slate-700/50 to-slate-800/50 border border-slate-600/50 rounded-xl text-white font-semibold text-base hover:from-slate-600 hover:to-slate-700 hover:scale-[1.02] transition-all duration-200 shadow-lg hover:shadow-xl"
-                    onClick={closeMobileMenu}
-                  >
-                    Register as Player
+                  {/* Page links */}
+                  <Link to="/" onClick={close}
+                    className={`py-3 px-4 rounded-xl font-bold text-sm text-center transition-colors ${isActive('/') ? 'bg-amber-500/10 text-amber-400 border border-amber-400/30' : 'text-slate-300 hover:bg-slate-800/50'}`}>
+                    Home
                   </Link>
-                  <Link
-                    to="/login-franchise"
-                    className="block w-full text-center py-4 px-6 bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white font-bold text-lg rounded-xl shadow-2xl hover:shadow-3xl hover:scale-[1.02] transition-all duration-200"
-                    onClick={closeMobileMenu}
-                  >
-                    Franchise Login
+
+                  {/* Auth buttons */}
+                  <Link to="/login-player" onClick={close}
+                    className="w-full py-3.5 px-5 text-center font-semibold text-sm text-white border border-slate-600/60 rounded-xl hover:border-slate-400 hover:bg-slate-800/50 transition-all">
+                    🏏 Player Login
                   </Link>
-                  <Link
-                    to="/admin-login"
-                    className="block w-full text-center py-3.5 px-6 border-2 border-slate-600/50 text-slate-300 font-bold text-sm uppercase tracking-widest rounded-xl hover:border-red-400 hover:text-red-300 hover:bg-red-500/10 transition-all duration-200"
-                    onClick={closeMobileMenu}
-                  >
+                  <Link to="/login-franchise" onClick={close}
+                    className="w-full py-3.5 px-5 text-center font-bold text-sm text-white bg-gradient-to-r from-blue-500 to-blue-700 rounded-xl shadow-lg hover:from-blue-600 hover:to-blue-800 transition-all">
+                    🏟️ Franchise Login
+                  </Link>
+                  <Link to="/admin-login" onClick={close}
+                    className="w-full py-3 px-5 text-center font-bold text-xs uppercase tracking-widest text-slate-500 border border-slate-700/40 rounded-xl hover:text-red-400 hover:border-red-400/40 hover:bg-red-500/5 transition-all">
                     ⚙ Admin Access
                   </Link>
                 </>
-              ) : (
+              )}
+
+              {/* Logged in */}
+              {userRole && (
                 <>
-                  {userRole === 'FRANCHISE' && auctionLive && (
-                    <Link
-                      to="/live-auction"
-                      className="block w-full text-center py-4 px-6 bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white font-bold text-lg rounded-xl shadow-2xl hover:shadow-3xl hover:scale-[1.02] transition-all duration-200 relative overflow-hidden"
-                      onClick={closeMobileMenu}
-                    >
+                  {/* Nav links */}
+                  <Link to="/" onClick={close}
+                    className={`py-3 px-4 rounded-xl font-bold text-sm text-center transition-colors ${isActive('/') ? 'bg-amber-500/10 text-amber-400 border border-amber-400/30' : 'text-slate-300 hover:bg-slate-800/50'}`}>
+                    Home
+                  </Link>
+
+                  {userRole === 'FRANCHISE' && <>
+                    <Link to="/dashboard-franchise" onClick={close}
+                      className={`py-3 px-4 rounded-xl font-bold text-sm text-center transition-colors ${isActive('/dashboard-franchise') ? 'bg-amber-500/10 text-amber-400 border border-amber-400/30' : 'text-slate-300 hover:bg-slate-800/50'}`}>
+                      Dashboard
+                    </Link>
+                    <Link to="/live-auction" onClick={close}
+                      className="w-full py-3.5 px-5 text-center font-bold text-sm text-white bg-gradient-to-r from-red-500 to-red-700 rounded-xl shadow-lg hover:from-red-600 hover:to-red-800 transition-all">
                       ⚡ Enter War Room
-                      <span className="absolute inset-0 bg-white/20 animate-shimmer -skew-x-12"></span>
+                      {auctionLive && <span className="ml-2 px-1.5 py-0.5 bg-white text-red-600 text-[10px] font-black rounded-full">LIVE</span>}
+                    </Link>
+                  </>}
+
+                  {userRole === 'PLAYER' && (
+                    <Link to="/dashboard-player" onClick={close}
+                      className={`py-3 px-4 rounded-xl font-bold text-sm text-center transition-colors ${isActive('/dashboard-player') ? 'bg-amber-500/10 text-amber-400 border border-amber-400/30' : 'text-slate-300 hover:bg-slate-800/50'}`}>
+                      My Status
                     </Link>
                   )}
 
-                  <div className="bg-gradient-to-br from-slate-800/70 to-slate-900/70 border border-slate-700/50 rounded-2xl p-6 text-center shadow-xl backdrop-blur-sm">
-                    <div className="w-20 h-20 mx-auto mb-4 bg-gradient-to-br from-amber-400 to-amber-500 rounded-full flex items-center justify-center shadow-2xl ring-2 ring-amber-400/40">
-                      <span className="text-3xl font-bold">👤</span>
+                  {userRole === 'ADMIN' && (
+                    <Link to="/admin-dashboard" onClick={close}
+                      className="w-full py-3.5 px-5 text-center font-bold text-sm text-white bg-gradient-to-r from-red-500 to-red-700 rounded-xl shadow-lg hover:from-red-600 hover:to-red-800 transition-all">
+                      🛡️ Admin Control Room
+                    </Link>
+                  )}
+
+                  {/* User info */}
+                  <div className="bg-slate-800/50 border border-slate-700/40 rounded-2xl p-4 text-center">
+                    <div className="w-14 h-14 mx-auto mb-2 bg-gradient-to-br from-amber-400 to-amber-600 rounded-full flex items-center justify-center shadow ring-2 ring-amber-400/30">
+                      <span className="text-2xl">👤</span>
                     </div>
-                    <div className="font-bold text-xl uppercase tracking-wider text-amber-400 mb-1">
-                      {franchiseName || userRole}
+                    <div className={`font-black text-base uppercase tracking-wider mb-0.5 ${userRole === 'ADMIN' ? 'text-red-400' : 'text-amber-400'}`}>
+                      {userRole === 'FRANCHISE' ? franchiseName : userRole === 'ADMIN' ? '⚙️ Admin' : 'Player'}
                     </div>
-                    <div className="text-sm text-slate-400 max-w-[200px] mx-auto">{userEmail}</div>
+                    <div className="text-xs text-slate-500 break-all">{userEmail}</div>
                   </div>
 
-                  <button
-                    onClick={handleLogout}
-                    className="w-full py-4 px-6 bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white font-bold text-lg rounded-xl shadow-2xl hover:shadow-3xl hover:scale-[1.02] transition-all duration-200 border border-transparent hover:border-red-700/50"
-                  >
-                    LOGOUT
+                  <button onClick={handleLogout}
+                    className="w-full py-3.5 px-5 font-bold text-sm text-white bg-gradient-to-r from-red-500 to-red-600 rounded-xl shadow-lg hover:from-red-600 hover:to-red-700 transition-all border-0">
+                    Logout
                   </button>
                 </>
               )}
@@ -327,12 +244,8 @@ const Navbar = () => {
         )}
       </nav>
 
-      {/* Spacer - FIXED HEIGHT */}
-      <div className={`
-        h-16 lg:h-20 
-        ${auctionLive ? '!h-24 lg:!h-32' : ''} 
-        transition-all duration-300
-      `} />
+      {/* Spacer to clear fixed navbar */}
+      <div className={`transition-all duration-300 ${auctionLive ? 'h-[104px] lg:h-[112px]' : 'h-16 lg:h-[68px]'}`} />
     </>
   );
 };

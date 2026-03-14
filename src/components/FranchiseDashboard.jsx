@@ -51,9 +51,9 @@ const FranchiseDashboard = () => {
 
   const handleBid = async () => {
     if (!bidModal) return;
-    const player = bidModal;
-    const minBid = (player.soldPrice || player.basicRemuneration || 0) + 1;
-    const amount = Number(bidAmount);
+    const player  = bidModal;
+    const minBid  = (player.soldPrice || player.basicRemuneration || 0) + 1;
+    const amount  = Number(bidAmount);
     if (!amount || amount < minBid) { showNotif(`❌ Bid must be above ${fmt(minBid)}`, 'error'); return; }
     if (amount > (franchise?.networth || 0)) { showNotif('❌ Insufficient purse!', 'error'); return; }
     setBidLoading(true);
@@ -76,7 +76,7 @@ const FranchiseDashboard = () => {
   const downloadPDF = () => {
     const squad = players.filter(p => p.boughtBy === currentFranchiseName);
     const doc = new jsPDF();
-    doc.setFillColor(4, 9, 28); doc.rect(0, 0, 210, 297, 'F');
+    doc.setFillColor(4, 9, 28);   doc.rect(0, 0, 210, 297, 'F');
     doc.setFillColor(30, 58, 138); doc.rect(0, 0, 210, 52, 'F');
     doc.setFillColor(251, 191, 36); doc.rect(0, 50, 210, 4, 'F');
     doc.setTextColor(255, 255, 255); doc.setFontSize(22); doc.setFont('helvetica', 'bold');
@@ -100,19 +100,31 @@ const FranchiseDashboard = () => {
     doc.save(`${currentFranchiseName}_Squad_Report.pdf`);
   };
 
-  const positions       = ['ALL', ...new Set(players.map(p => p.position).filter(Boolean))];
-  const mySquad         = players.filter(p => p.boughtBy === currentFranchiseName);
-  const totalSpend      = mySquad.reduce((a, p) => a + (p.soldPrice || 0), 0);
-  const lastFiveSales   = players.filter(p => p.status === 'SOLD').slice(-5).reverse();
+  const positions     = ['ALL', ...new Set(players.map(p => p.position).filter(Boolean))];
+  const mySquad       = players.filter(p => p.boughtBy === currentFranchiseName);
+  const totalSpend    = mySquad.reduce((a, p) => a + (p.soldPrice || 0), 0);
+  const lastFiveSales = players.filter(p => p.status === 'SOLD').slice(-5).reverse();
 
   const filteredPlayers = players.filter(p => {
-    const matchView   = view === 'squad' ? p.boughtBy === currentFranchiseName : view === 'sold' ? p.status === 'SOLD' : p.status !== 'SOLD';
+    const matchView   = view === 'squad' ? p.boughtBy === currentFranchiseName
+                      : view === 'sold'  ? p.status === 'SOLD'
+                      : p.status !== 'SOLD';
     const matchSearch = p.name?.toLowerCase().includes(search.toLowerCase());
     const matchPos    = filterPos === 'ALL' || p.position === filterPos;
     return matchView && matchSearch && matchPos;
   });
 
-  const viewLabels = { bidding: '🔥 Live Auction Pool', squad: `👕 My Squad (${mySquad.length})`, sold: '🏆 All Sold History' };
+  const viewLabels = {
+    bidding: '🔥 Live Auction Pool',
+    squad:   `👕 My Squad (${mySquad.length})`,
+    sold:    '🏆 All Sold History',
+  };
+
+  const navItems = [
+    { key: 'bidding', icon: '🔥', label: 'Live Auction',               mobileLabel: 'Auction'  },
+    { key: 'squad',   icon: '👕', label: `My Squad (${mySquad.length})`,mobileLabel: 'Squad'    },
+    { key: 'sold',    icon: '🏆', label: 'Sold History',               mobileLabel: 'Sold'     },
+  ];
 
   return (
     <>
@@ -120,38 +132,56 @@ const FranchiseDashboard = () => {
         @import url('https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@700;900&family=Barlow:wght@400;500;600&display=swap');
         .font-bc { font-family:'Barlow Condensed',sans-serif; }
         .font-b  { font-family:'Barlow',sans-serif; }
-        @keyframes slideIn { from{transform:translateY(-20px);opacity:0} to{transform:translateY(0);opacity:1} }
-        @keyframes marquee { 0%{transform:translateX(100%)} 100%{transform:translateX(-200%)} }
+        @keyframes slideIn { from{transform:translateY(-16px);opacity:0} to{transform:translateY(0);opacity:1} }
+        @keyframes marquee { 0%{transform:translateX(0)} 100%{transform:translateX(-50%)} }
         @keyframes spin    { to{transform:rotate(360deg)} }
         input::placeholder { color:rgba(255,255,255,0.2); }
         select option { background:#0a1628; }
       `}</style>
 
-      <div className="flex min-h-screen bg-[#04091c] font-b relative">
+      {/*
+        ─── LAYOUT STRATEGY ────────────────────────────────────────────────────
+        Desktop (lg+):
+          • Left sidebar: fixed, full height, 220px wide, starts at top (has its own pt-[70px])
+          • Main content: margin-left 220px, normal scroll
+          • Bottom ticker: fixed, left-[220px]
 
-        {/* NOTIFICATION */}
+        Mobile (<lg):
+          • NO fixed sidebar at top — this was the bug (it overlapped the navbar)
+          • Instead: bottom tab bar fixed at bottom (above the ticker)
+          • Main content: normal top padding (just clear the navbar), bottom padding clears tab bar + ticker
+          • Bottom ticker: full width fixed at bottom-[56px] (above tab bar)
+        ────────────────────────────────────────────────────────────────────────
+      */}
+      <div className="min-h-screen bg-[#04091c] font-b">
+
+        {/* ── NOTIFICATION ──────────────────────────────────────────────────── */}
         {notification && (
-          <div className={`fixed top-20 right-4 sm:right-6 z-[9999] px-6 py-3.5 rounded-xl text-sm font-bc font-black tracking-[1px] text-white shadow-[0_12px_40px_rgba(0,0,0,0.5)] ${notification.type === 'success' ? 'bg-gradient-to-r from-green-700 to-green-800' : 'bg-gradient-to-r from-red-700 to-red-800'}`}
-            style={{ animation:'slideIn 0.3s ease', maxWidth:320 }}>
+          <div className={`fixed top-20 right-4 sm:right-6 z-[9999] px-5 py-3.5 rounded-xl text-sm font-bc font-black tracking-[1px] text-white shadow-[0_12px_40px_rgba(0,0,0,0.5)] max-w-xs ${
+            notification.type === 'success' ? 'bg-gradient-to-r from-green-700 to-green-800' : 'bg-gradient-to-r from-red-700 to-red-800'
+          }`} style={{ animation:'slideIn 0.3s ease' }}>
             {notification.msg}
           </div>
         )}
 
-        {/* BID MODAL */}
+        {/* ── BID MODAL ─────────────────────────────────────────────────────── */}
         {bidModal && (
-          <div className="fixed inset-0 z-[9998] bg-black/85 flex items-center justify-center p-6">
-            <div className="bg-[#0a1628] border border-white/10 rounded-2xl p-9 w-full max-w-[440px]" style={{ animation:'slideIn 0.3s ease' }}>
-              <h2 className="font-bc text-3xl font-black text-white mb-1 tracking-tight">PLACE YOUR BID</h2>
-              <p className="text-white/45 text-sm mb-6">for <strong className="text-yellow-400">{bidModal.name}</strong> — {bidModal.position}</p>
+          <div className="fixed inset-0 z-[9998] bg-black/85 flex items-center justify-center p-4 sm:p-6">
+            <div className="bg-[#0a1628] border border-white/10 rounded-2xl p-6 sm:p-9 w-full max-w-[440px]"
+              style={{ animation:'slideIn 0.3s ease' }}>
+              <h2 className="font-bc text-2xl sm:text-3xl font-black text-white mb-1 tracking-tight">PLACE YOUR BID</h2>
+              <p className="text-white/45 text-sm mb-5">
+                for <strong className="text-yellow-400">{bidModal.name}</strong> — {bidModal.position}
+              </p>
 
-              <div className="bg-white/[0.03] border border-white/[0.07] rounded-xl px-5 py-4 mb-5 grid grid-cols-2 gap-3">
+              <div className="bg-white/[0.03] border border-white/[0.07] rounded-xl px-4 py-3.5 mb-5 grid grid-cols-2 gap-3">
                 <div>
                   <p className="font-bc text-[10px] text-white/30 tracking-[2px] mb-1">CURRENT PRICE</p>
-                  <p className="font-bc text-[22px] font-black text-yellow-400">{fmt(bidModal.soldPrice || bidModal.basicRemuneration)}</p>
+                  <p className="font-bc text-xl font-black text-yellow-400">{fmt(bidModal.soldPrice || bidModal.basicRemuneration)}</p>
                 </div>
                 <div>
                   <p className="font-bc text-[10px] text-white/30 tracking-[2px] mb-1">YOUR PURSE</p>
-                  <p className="font-bc text-[22px] font-black text-green-400">{fmt(franchise?.networth)}</p>
+                  <p className="font-bc text-xl font-black text-green-400">{fmt(franchise?.networth)}</p>
                 </div>
               </div>
 
@@ -170,7 +200,9 @@ const FranchiseDashboard = () => {
                   CANCEL
                 </button>
                 <button onClick={handleBid} disabled={bidLoading}
-                  className={`flex-[2] font-bc font-black text-sm tracking-[1px] text-white border-0 rounded-xl py-3.5 transition-all ${bidLoading ? 'bg-blue-800/40 cursor-not-allowed' : 'bg-gradient-to-r from-blue-500 to-blue-800 cursor-pointer hover:-translate-y-0.5'}`}>
+                  className={`flex-[2] font-bc font-black text-sm tracking-[1px] text-white border-0 rounded-xl py-3.5 transition-all ${
+                    bidLoading ? 'bg-blue-800/40 cursor-not-allowed' : 'bg-gradient-to-r from-blue-500 to-blue-800 cursor-pointer hover:-translate-y-0.5'
+                  }`}>
                   {bidLoading ? '⏳ PROCESSING...' : '⚡ CONFIRM BID'}
                 </button>
               </div>
@@ -178,29 +210,31 @@ const FranchiseDashboard = () => {
           </div>
         )}
 
-        {/* SIDEBAR */}
-        <aside className="w-full lg:w-[220px] bg-[#04091c] lg:bg-white/[0.02] border-b lg:border-b-0 lg:border-r border-white/[0.06] flex flex-row lg:flex-col fixed lg:fixed top-[64px] lg:top-0 left-0 lg:h-screen z-40 lg:pt-[70px] transition-all overflow-x-auto lg:overflow-visible items-center lg:items-stretch">
-          <div className="flex-1 px-4 py-3 lg:py-5 flex lg:block gap-3">
+        {/* ── DESKTOP SIDEBAR (lg+) — fixed left, full height ───────────────── */}
+        <aside className="hidden lg:flex flex-col fixed top-0 left-0 h-screen w-[220px] bg-white/[0.02] border-r border-white/[0.06] z-40 pt-[70px]">
+          <div className="flex-1 px-4 py-5 overflow-y-auto">
             <p className="font-bc text-[9px] font-bold text-white/25 tracking-[3px] mb-3">NAVIGATION</p>
 
-            {[
-              { key:'bidding', icon:'🔥', label:'Live Auction' },
-              { key:'squad',   icon:'👕', label:`My Squad` },
-              { key:'sold',    icon:'🏆', label:'Sold History' },
-            ].map(item => (
+            {navItems.map(item => (
               <button key={item.key} onClick={() => setView(item.key)}
-                className={`font-bc flex items-center gap-2.5 w-auto lg:w-full rounded-xl px-3.5 py-2 lg:py-3 mb-0 lg:mb-1.5 text-sm font-bold tracking-[0.5px] text-left transition-all border whitespace-nowrap ${view === item.key ? 'bg-blue-500/15 border-blue-500/30 text-white' : 'bg-transparent border-transparent text-white/50 hover:bg-white/[0.08] hover:text-white'}`}>
-                <span>{item.icon}</span><span>{item.label} {item.key === 'squad' && `(${mySquad.length})`}</span>
+                className={`font-bc flex items-center gap-2.5 w-full rounded-xl px-3.5 py-3 mb-1.5 text-sm font-bold text-left transition-all border ${
+                  view === item.key
+                    ? 'bg-blue-500/15 border-blue-500/30 text-white'
+                    : 'bg-transparent border-transparent text-white/50 hover:bg-white/[0.08] hover:text-white'
+                }`}>
+                <span>{item.icon}</span>
+                <span>{item.label}</span>
               </button>
             ))}
 
             <button onClick={() => navigate('/live-auction')}
-              className="font-bc flex items-center gap-2.5 w-auto lg:w-full bg-red-500/20 border border-red-500/35 text-red-500 rounded-xl px-3.5 py-2 lg:py-3.5 mt-0 lg:mt-4 text-sm font-black tracking-[1px] hover:bg-red-500/30 transition-colors cursor-pointer whitespace-nowrap">
+              className="font-bc flex items-center gap-2.5 w-full bg-red-500/20 border border-red-500/35 text-red-500 rounded-xl px-3.5 py-3.5 mt-4 text-sm font-black tracking-[1px] hover:bg-red-500/30 transition-colors cursor-pointer">
               <span>⚡</span><span>WAR ROOM</span>
             </button>
           </div>
 
-          <div className="hidden lg:block px-4 py-4 border-t border-white/[0.06]">
+          {/* Purse info */}
+          <div className="px-4 py-4 border-t border-white/[0.06] shrink-0">
             <p className="font-bc text-[9px] text-white/25 tracking-[3px] mb-1.5">PURSE REMAINING</p>
             <p className="font-bc text-[22px] font-black text-yellow-400 leading-none mb-1">{fmt(franchise?.networth)}</p>
             <p className="font-b text-[10px] text-white/30 mb-3">Total Spent: {fmt(totalSpend)}</p>
@@ -211,70 +245,117 @@ const FranchiseDashboard = () => {
           </div>
         </aside>
 
-        {/* MAIN */}
-        <main className="ml-0 lg:ml-[220px] flex-1 px-4 sm:px-6 pt-[140px] lg:pt-7 pb-28 min-h-screen">
+        {/* ── MAIN CONTENT ──────────────────────────────────────────────────── */}
+        {/*
+          Desktop: ml-[220px], pb-16 (clears bottom ticker)
+          Mobile:  ml-0, pt-4 (navbar spacer already added by Navbar component),
+                   pb-[120px] (clears bottom tab bar 56px + ticker 48px + gap)
+        */}
+        <main className="
+          lg:ml-[220px]
+          px-4 sm:px-6
+          pt-4 lg:pt-7
+          pb-[120px] lg:pb-16
+          min-h-screen
+        ">
+
+          {/* Mobile purse bar — shows above content on small screens */}
+          <div className="lg:hidden flex items-center justify-between bg-white/[0.03] border border-white/[0.06] rounded-xl px-4 py-3 mb-5">
+            <div>
+              <p className="font-bc text-[9px] text-white/30 tracking-[2px]">PURSE REMAINING</p>
+              <p className="font-bc text-xl font-black text-yellow-400 leading-none">{fmt(franchise?.networth)}</p>
+            </div>
+            <div className="text-right">
+              <p className="font-bc text-[9px] text-white/30 tracking-[2px]">TOTAL SPENT</p>
+              <p className="font-bc text-xl font-black text-red-400 leading-none">{fmt(totalSpend)}</p>
+            </div>
+            <button onClick={() => navigate('/live-auction')}
+              className="font-bc font-black text-xs tracking-[1px] text-white bg-red-500/20 border border-red-500/35 px-3 py-2 rounded-lg text-red-400 hover:bg-red-500/30 transition-colors cursor-pointer">
+              ⚡ WAR ROOM
+            </button>
+          </div>
 
           {/* Header */}
-          <div className="flex justify-between items-center flex-wrap gap-4 mb-7">
+          <div className="flex justify-between items-start flex-wrap gap-4 mb-6">
             <div>
               <p className="font-bc text-[10px] text-white/30 tracking-[3px] mb-1">{currentFranchiseName?.toUpperCase()}</p>
-              <h1 className="font-bc text-[32px] font-black text-white tracking-tight">{viewLabels[view]}</h1>
+              <h1 className="font-bc text-2xl sm:text-[32px] font-black text-white tracking-tight">{viewLabels[view]}</h1>
             </div>
-            <div className="flex gap-3 items-center flex-wrap">
+            <div className="flex gap-2 sm:gap-3 items-center flex-wrap">
               {view === 'squad' && (
                 <button onClick={downloadPDF}
-                  className="font-bc font-bold text-sm tracking-[1px] text-green-400 bg-green-500/15 border border-green-400/35 px-5 py-2.5 rounded-xl cursor-pointer hover:bg-green-500/25 transition-colors">
-                  📥 DOWNLOAD PDF
+                  className="font-bc font-bold text-sm tracking-[1px] text-green-400 bg-green-500/15 border border-green-400/35 px-4 py-2 rounded-xl cursor-pointer hover:bg-green-500/25 transition-colors">
+                  📥 PDF
                 </button>
               )}
-              <input type="text" placeholder="Search players..." value={search} onChange={e => setSearch(e.target.value)}
-                className="font-b bg-white/[0.05] border border-white/10 rounded-lg px-3.5 py-2.5 text-white text-sm outline-none w-44 focus:border-blue-500/50 transition-colors" />
+              <input
+                type="text" placeholder="Search..." value={search}
+                onChange={e => setSearch(e.target.value)}
+                className="font-b bg-white/[0.05] border border-white/10 rounded-lg px-3 py-2 text-white text-sm outline-none w-32 sm:w-44 focus:border-blue-500/50 transition-colors"
+              />
               <select value={filterPos} onChange={e => setFilterPos(e.target.value)}
-                className="font-b bg-[#0a1628] border border-white/10 rounded-lg px-3.5 py-2.5 text-white text-sm outline-none focus:border-blue-500/50 transition-colors">
+                className="font-b bg-[#0a1628] border border-white/10 rounded-lg px-3 py-2 text-white text-sm outline-none focus:border-blue-500/50 transition-colors">
                 {positions.map(p => <option key={p}>{p}</option>)}
               </select>
-              <div className="flex items-center gap-1.5 bg-white/[0.03] border border-white/[0.07] rounded-lg px-3 py-2">
+              <div className="flex items-center gap-1.5 bg-white/[0.03] border border-white/[0.07] rounded-lg px-2.5 py-2">
                 <div className="w-1.5 h-1.5 bg-green-400 rounded-full" style={{ animation:'spin 2s linear infinite' }} />
                 <span className="font-b text-[11px] text-white/40">LIVE</span>
               </div>
             </div>
           </div>
 
-          {/* Grid */}
+          {/* Player Grid */}
           {filteredPlayers.length === 0 ? (
-            <div className="font-bc text-center py-20 text-white/25 text-2xl font-bold">
+            <div className="font-bc text-center py-20 text-white/25 text-xl sm:text-2xl font-bold">
               {view === 'squad' ? '🏏 No players acquired yet. Start bidding!' : '🔍 No players match your search.'}
             </div>
           ) : (
-            <div className="grid gap-4" style={{ gridTemplateColumns:'repeat(auto-fill,minmax(280px,1fr))' }}>
+            <div className="grid gap-4" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(270px, 1fr))' }}>
               {filteredPlayers.map(p => {
                 const isMine = p.boughtBy === currentFranchiseName;
                 const isSold = p.status === 'SOLD';
                 return (
-                  <div key={p.id} className={`bg-white/[0.02] border rounded-2xl overflow-hidden flex flex-col hover:-translate-y-1 hover:shadow-[0_16px_40px_rgba(0,0,0,0.5)] transition-all ${isMine ? 'border-green-400/30' : isSold ? 'border-red-500/20' : 'border-white/[0.07]'}`}>
+                  <div key={p.id} className={`bg-white/[0.02] border rounded-2xl overflow-hidden flex flex-col hover:-translate-y-1 hover:shadow-[0_16px_40px_rgba(0,0,0,0.5)] transition-all duration-200 ${
+                    isMine ? 'border-green-400/30' : isSold ? 'border-red-500/20' : 'border-white/[0.07]'
+                  }`}>
 
-                    <div className={`px-5 pt-5 pb-3.5 border-b border-white/[0.05] ${isMine ? 'bg-green-500/[0.08]' : 'bg-white/[0.02]'}`}>
-                      <div className="flex justify-between items-start mb-1.5">
-                        <h3 className="font-bc text-xl font-black text-white tracking-tight">{p.name}</h3>
-                        {isMine && <span className="font-bc bg-green-400/15 text-green-400 border border-green-400/30 rounded-full px-2.5 py-0.5 text-[10px] font-bold tracking-[1px] shrink-0">MINE</span>}
+                    {/* Card header */}
+                    <div className={`px-5 pt-4 pb-3 border-b border-white/[0.05] ${isMine ? 'bg-green-500/[0.08]' : 'bg-white/[0.02]'}`}>
+                      <div className="flex justify-between items-start mb-1">
+                        <h3 className="font-bc text-xl font-black text-white tracking-tight leading-tight pr-2">{p.name}</h3>
+                        {isMine && (
+                          <span className="font-bc bg-green-400/15 text-green-400 border border-green-400/30 rounded-full px-2 py-0.5 text-[10px] font-bold tracking-[1px] shrink-0">
+                            MINE
+                          </span>
+                        )}
                       </div>
                       <p className="font-b text-xs text-white/40">{p.position} · 🌏 {p.country}</p>
                     </div>
 
-                    <div className="grid grid-cols-3 bg-white/[0.04] px-5 py-2.5 gap-0">
-                      {[{l:'T20',v:p.t20Runs||0},{l:'Avg',v:p.battingAverage||'N/A'},{l:'Wkts',v:p.wickets||0}].map(s=>(
+                    {/* Mini stats */}
+                    <div className="grid grid-cols-3 bg-white/[0.04] px-5 py-2.5">
+                      {[
+                        { l: 'T20',  v: p.t20Runs       || 0     },
+                        { l: 'Avg',  v: p.battingAverage || 'N/A' },
+                        { l: 'Wkts', v: p.wickets        || 0     },
+                      ].map(s => (
                         <div key={s.l} className="text-center">
-                          <div className="font-bc text-[15px] font-black text-white">{s.v}</div>
+                          <div className="font-bc text-sm font-black text-white">{s.v}</div>
                           <div className="font-bc text-[9px] text-white/30 tracking-[2px]">{s.l}</div>
                         </div>
                       ))}
                     </div>
 
+                    {/* Price + action */}
                     <div className="px-5 py-3.5 mt-auto">
                       <div className="flex justify-between items-center mb-3">
                         <div>
-                          <p className="font-bc text-[9px] text-white/30 tracking-[2px] mb-0.5">{isSold ? 'SOLD FOR' : 'BASE PRICE'}</p>
-                          <p className={`font-bc text-[22px] font-black leading-none ${isSold ? 'text-green-400' : 'text-yellow-400'}`}>{fmt(isSold ? p.soldPrice : p.basicRemuneration)}</p>
+                          <p className="font-bc text-[9px] text-white/30 tracking-[2px] mb-0.5">
+                            {isSold ? 'SOLD FOR' : 'BASE PRICE'}
+                          </p>
+                          <p className={`font-bc text-[22px] font-black leading-none ${isSold ? 'text-green-400' : 'text-yellow-400'}`}>
+                            {fmt(isSold ? p.soldPrice : p.basicRemuneration)}
+                          </p>
                         </div>
                         {isSold && p.boughtBy && !isMine && (
                           <div className="text-right">
@@ -285,11 +366,16 @@ const FranchiseDashboard = () => {
                       </div>
 
                       {isSold ? (
-                        <div className={`font-bc text-center py-2.5 rounded-xl text-sm font-bold tracking-[1px] border ${isMine ? 'bg-green-400/10 border-green-400/25 text-green-400' : 'bg-red-500/[0.08] border-red-500/20 text-red-400'}`}>
+                        <div className={`font-bc text-center py-2.5 rounded-xl text-sm font-bold tracking-[1px] border ${
+                          isMine
+                            ? 'bg-green-400/10 border-green-400/25 text-green-400'
+                            : 'bg-red-500/[0.08] border-red-500/20 text-red-400'
+                        }`}>
                           {isMine ? '✅ ACQUIRED BY YOU' : `SOLD TO ${p.boughtBy}`}
                         </div>
                       ) : (
-                        <button onClick={() => { setBidModal(p); setBidAmount(''); }}
+                        <button
+                          onClick={() => { setBidModal(p); setBidAmount(''); }}
                           className="font-bc w-full font-black text-sm tracking-[1px] text-white bg-gradient-to-r from-blue-500 to-blue-800 border-0 py-3 rounded-xl cursor-pointer shadow-[0_4px_16px_rgba(59,130,246,0.3)] hover:-translate-y-0.5 transition-all">
                           ⚡ PLACE BID
                         </button>
@@ -302,20 +388,58 @@ const FranchiseDashboard = () => {
           )}
         </main>
 
-        {/* BOTTOM TICKER */}
-        <footer className="fixed bottom-0 left-0 lg:left-[220px] right-0 bg-[#020814] border-t-2 border-yellow-400/30 py-2.5 overflow-hidden z-40">
-          <div className="inline-flex items-center whitespace-nowrap" style={{ animation:'marquee 35s linear infinite' }}>
-            <span className="font-bc bg-yellow-400 text-black px-3.5 py-0.5 rounded text-[11px] font-black tracking-[2px] mr-7 shrink-0">LATEST SALES</span>
-            {lastFiveSales.length > 0 ? lastFiveSales.map(s => (
-              <span key={s.id} className="font-b mr-10 text-[13px] text-white/60">
-                🏏 <strong className="text-yellow-400">{s.name}</strong>{' '}
-                <span className="text-green-400 font-bold">SOLD</span> → {s.boughtBy} for {fmt(s.soldPrice)} &nbsp;•
+        {/* ── MOBILE BOTTOM TAB BAR (hidden on lg+) ─────────────────────────── */}
+        {/*
+          Fixed at bottom, above the ticker (bottom-[48px]).
+          Height 56px. Provides navigation without any navbar overlap.
+        */}
+        <nav className="lg:hidden fixed bottom-[48px] left-0 right-0 z-40 bg-[#04091c] border-t border-white/[0.08] flex items-stretch h-[56px]">
+          {navItems.map(item => (
+            <button key={item.key} onClick={() => setView(item.key)}
+              className={`flex-1 flex flex-col items-center justify-center gap-0.5 text-[10px] font-bc font-bold tracking-[1px] transition-colors ${
+                view === item.key ? 'text-blue-400 bg-blue-500/10' : 'text-white/35 hover:text-white/70'
+              }`}>
+              <span className="text-lg leading-none">{item.icon}</span>
+              <span className="uppercase">{item.mobileLabel}</span>
+            </button>
+          ))}
+          <button onClick={() => navigate('/live-auction')}
+            className="flex-1 flex flex-col items-center justify-center gap-0.5 text-[10px] font-bc font-bold tracking-[1px] text-red-400 bg-red-500/10 transition-colors">
+            <span className="text-lg leading-none">⚡</span>
+            <span className="uppercase">War Room</span>
+          </button>
+        </nav>
+
+        {/* ── BOTTOM TICKER ─────────────────────────────────────────────────── */}
+        {/*
+          Desktop: fixed bottom-0, left-[220px] (clears sidebar)
+          Mobile:  fixed bottom-0, left-0 — sits below tab bar (tab bar is bottom-[48px])
+          Height: 48px
+        */}
+        <footer className="fixed bottom-0 left-0 lg:left-[220px] right-0 h-[48px] bg-[#020814] border-t-2 border-yellow-400/30 flex items-center overflow-hidden z-30">
+          <div className="inline-flex items-center whitespace-nowrap shrink-0" style={{ animation: 'marquee 30s linear infinite' }}>
+            {/* Duplicate for seamless loop */}
+            {[...Array(2)].map((_, di) => (
+              <span key={di} className="inline-flex items-center">
+                <span className="font-bc bg-yellow-400 text-black px-3 py-0.5 rounded text-[11px] font-black tracking-[2px] mx-6 shrink-0">
+                  LATEST SALES
+                </span>
+                {lastFiveSales.length > 0 ? lastFiveSales.map(s => (
+                  <span key={s.id} className="font-b mr-8 text-[12px] text-white/60 shrink-0">
+                    🏏 <strong className="text-yellow-400">{s.name}</strong>{' '}
+                    <span className="text-green-400 font-bold">SOLD</span>
+                    {' → '}{s.boughtBy} for {fmt(s.soldPrice)} &nbsp;•
+                  </span>
+                )) : (
+                  <span className="font-b text-[12px] text-white/35 mr-8 shrink-0">
+                    No sales yet — auction is live, waiting for bids...
+                  </span>
+                )}
               </span>
-            )) : (
-              <span className="font-b text-[13px] text-white/40">Auction is live. No sales yet — waiting for bids...</span>
-            )}
+            ))}
           </div>
         </footer>
+
       </div>
     </>
   );
