@@ -1,5 +1,4 @@
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
-
 import Navbar             from './components/Navbar';
 import Home               from './pages/Home';
 import Psignup            from './pages/Psignup';
@@ -12,8 +11,7 @@ import AuctionDashboard   from './components/AuctionDashboard';
 import AdminLogin         from './pages/AdminLogin';
 import AdminDashboard     from './components/AdminDashboard';
 import AdminPanel         from './components/AdminPanel';
-
-// ── Route Guards ──────────────────────────────────────────────────────────────
+import BidRoom            from './components/BidRoom';
 
 const ProtectedRoute = ({ role, children }) => {
   const userRole = localStorage.getItem('userRole');
@@ -33,56 +31,36 @@ const GuestRoute = ({ children }) => {
   return children;
 };
 
-// ── App ───────────────────────────────────────────────────────────────────────
-
 function App() {
   return (
     <Router>
       <div className="min-h-screen bg-[#04091c] flex flex-col">
         <Routes>
+          <Route path="/admin-login"     element={<GuestRoute><AdminLogin /></GuestRoute>} />
+          <Route path="/admin-dashboard" element={<ProtectedRoute role="ADMIN"><AdminDashboard /></ProtectedRoute>} />
+          <Route path="/admin-control"   element={<ProtectedRoute role="ADMIN"><AdminPanel /></ProtectedRoute>} />
 
-          {/* ADMIN routes — full-screen, no Navbar */}
-          <Route path="/admin-login" element={
-            <GuestRoute><AdminLogin /></GuestRoute>
-          } />
-          <Route path="/admin-dashboard" element={
-            <ProtectedRoute role="ADMIN"><AdminDashboard /></ProtectedRoute>
-          } />
-          <Route path="/admin-control" element={
-            <ProtectedRoute role="ADMIN"><AdminPanel /></ProtectedRoute>
-          } />
+          {/* Dynamic Bid Room — passkey is the auth */}
+          <Route path="/bid/:playerId/:franchiseId/:passkey" element={<BidRoom />} />
 
-          {/* All other routes — with Navbar */}
           <Route path="*" element={
             <>
               <Navbar />
               <main className="flex-1">
                 <Routes>
-                  <Route path="/" element={<Home />} />
-
-                  <Route path="/signup-player"   element={<GuestRoute><Psignup /></GuestRoute>} />
-                  <Route path="/login-player"    element={<GuestRoute><Plogin  /></GuestRoute>} />
-
+                  <Route path="/"                 element={<Home />} />
+                  <Route path="/signup-player"    element={<GuestRoute><Psignup /></GuestRoute>} />
+                  <Route path="/login-player"     element={<GuestRoute><Plogin  /></GuestRoute>} />
                   <Route path="/signup-franchise" element={<GuestRoute><Fsignup /></GuestRoute>} />
                   <Route path="/login-franchise"  element={<GuestRoute><Flogin  /></GuestRoute>} />
-
-                  <Route path="/dashboard-player" element={
-                    <ProtectedRoute role="PLAYER"><PlayerDashboard /></ProtectedRoute>
-                  } />
-
-                  <Route path="/dashboard-franchise" element={
-                    <ProtectedRoute role="FRANCHISE"><FranchiseDashboard /></ProtectedRoute>
-                  } />
-                  <Route path="/live-auction" element={
-                    <ProtectedRoute role="FRANCHISE"><AuctionDashboard /></ProtectedRoute>
-                  } />
-
-                  <Route path="*" element={<Navigate to="/" replace />} />
+                  <Route path="/dashboard-player" element={<ProtectedRoute role="PLAYER"><PlayerDashboard /></ProtectedRoute>} />
+                  <Route path="/dashboard-franchise" element={<ProtectedRoute role="FRANCHISE"><FranchiseDashboard /></ProtectedRoute>} />
+                  <Route path="/live-auction"     element={<ProtectedRoute role="FRANCHISE"><AuctionDashboard /></ProtectedRoute>} />
+                  <Route path="*"                 element={<Navigate to="/" replace />} />
                 </Routes>
               </main>
             </>
           } />
-
         </Routes>
       </div>
     </Router>

@@ -2,6 +2,8 @@ import { useEffect, useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { jsPDF } from 'jspdf';
 import autoTable from 'jspdf-autotable';
+// ✅ LINE 1 ADDED HERE — import BidUrlBanner
+import BidUrlBanner from './BidUrlBanner';
 
 const fmt = (n) => `₹${Number(n || 0).toLocaleString('en-IN')}`;
 
@@ -121,9 +123,9 @@ const FranchiseDashboard = () => {
   };
 
   const navItems = [
-    { key: 'bidding', icon: '🔥', label: 'Live Auction',               mobileLabel: 'Auction'  },
-    { key: 'squad',   icon: '👕', label: `My Squad (${mySquad.length})`,mobileLabel: 'Squad'    },
-    { key: 'sold',    icon: '🏆', label: 'Sold History',               mobileLabel: 'Sold'     },
+    { key: 'bidding', icon: '🔥', label: 'Live Auction',                mobileLabel: 'Auction' },
+    { key: 'squad',   icon: '👕', label: `My Squad (${mySquad.length})`, mobileLabel: 'Squad'   },
+    { key: 'sold',    icon: '🏆', label: 'Sold History',                mobileLabel: 'Sold'    },
   ];
 
   return (
@@ -139,20 +141,6 @@ const FranchiseDashboard = () => {
         select option { background:#0a1628; }
       `}</style>
 
-      {/*
-        ─── LAYOUT STRATEGY ────────────────────────────────────────────────────
-        Desktop (lg+):
-          • Left sidebar: fixed, full height, 220px wide, starts at top (has its own pt-[70px])
-          • Main content: margin-left 220px, normal scroll
-          • Bottom ticker: fixed, left-[220px]
-
-        Mobile (<lg):
-          • NO fixed sidebar at top — this was the bug (it overlapped the navbar)
-          • Instead: bottom tab bar fixed at bottom (above the ticker)
-          • Main content: normal top padding (just clear the navbar), bottom padding clears tab bar + ticker
-          • Bottom ticker: full width fixed at bottom-[56px] (above tab bar)
-        ────────────────────────────────────────────────────────────────────────
-      */}
       <div className="min-h-screen bg-[#04091c] font-b">
 
         {/* ── NOTIFICATION ──────────────────────────────────────────────────── */}
@@ -164,6 +152,12 @@ const FranchiseDashboard = () => {
           </div>
         )}
 
+        {/* ✅ LINE 2 ADDED HERE — BidUrlBanner shown right after notification */}
+        <BidUrlBanner
+          franchiseId={franchiseId}
+          franchiseName={currentFranchiseName}
+        />
+
         {/* ── BID MODAL ─────────────────────────────────────────────────────── */}
         {bidModal && (
           <div className="fixed inset-0 z-[9998] bg-black/85 flex items-center justify-center p-4 sm:p-6">
@@ -173,7 +167,6 @@ const FranchiseDashboard = () => {
               <p className="text-white/45 text-sm mb-5">
                 for <strong className="text-yellow-400">{bidModal.name}</strong> — {bidModal.position}
               </p>
-
               <div className="bg-white/[0.03] border border-white/[0.07] rounded-xl px-4 py-3.5 mb-5 grid grid-cols-2 gap-3">
                 <div>
                   <p className="font-bc text-[10px] text-white/30 tracking-[2px] mb-1">CURRENT PRICE</p>
@@ -184,7 +177,6 @@ const FranchiseDashboard = () => {
                   <p className="font-bc text-xl font-black text-green-400">{fmt(franchise?.networth)}</p>
                 </div>
               </div>
-
               <div className="mb-5">
                 <label className="font-bc block text-[11px] font-bold text-white/45 tracking-[2px] mb-2">YOUR BID AMOUNT (₹)</label>
                 <input
@@ -193,7 +185,6 @@ const FranchiseDashboard = () => {
                   className="w-full bg-white/[0.05] border border-white/[0.12] rounded-xl px-4 py-3.5 text-white text-xl font-bc font-black outline-none focus:border-yellow-400/60 focus:ring-2 focus:ring-yellow-400/15 transition-all"
                 />
               </div>
-
               <div className="flex gap-3">
                 <button onClick={() => { setBidModal(null); setBidAmount(''); }}
                   className="flex-1 font-bc font-bold text-sm tracking-[1px] text-white/60 bg-white/[0.05] border border-white/10 rounded-xl py-3.5 cursor-pointer hover:bg-white/[0.1] transition-colors">
@@ -210,11 +201,10 @@ const FranchiseDashboard = () => {
           </div>
         )}
 
-        {/* ── DESKTOP SIDEBAR (lg+) — fixed left, full height ───────────────── */}
+        {/* ── DESKTOP SIDEBAR ───────────────────────────────────────────────── */}
         <aside className="hidden lg:flex flex-col fixed top-0 left-0 h-screen w-[220px] bg-white/[0.02] border-r border-white/[0.06] z-40 pt-[70px]">
           <div className="flex-1 px-4 py-5 overflow-y-auto">
             <p className="font-bc text-[9px] font-bold text-white/25 tracking-[3px] mb-3">NAVIGATION</p>
-
             {navItems.map(item => (
               <button key={item.key} onClick={() => setView(item.key)}
                 className={`font-bc flex items-center gap-2.5 w-full rounded-xl px-3.5 py-3 mb-1.5 text-sm font-bold text-left transition-all border ${
@@ -226,14 +216,11 @@ const FranchiseDashboard = () => {
                 <span>{item.label}</span>
               </button>
             ))}
-
             <button onClick={() => navigate('/live-auction')}
               className="font-bc flex items-center gap-2.5 w-full bg-red-500/20 border border-red-500/35 text-red-500 rounded-xl px-3.5 py-3.5 mt-4 text-sm font-black tracking-[1px] hover:bg-red-500/30 transition-colors cursor-pointer">
               <span>⚡</span><span>WAR ROOM</span>
             </button>
           </div>
-
-          {/* Purse info */}
           <div className="px-4 py-4 border-t border-white/[0.06] shrink-0">
             <p className="font-bc text-[9px] text-white/25 tracking-[3px] mb-1.5">PURSE REMAINING</p>
             <p className="font-bc text-[22px] font-black text-yellow-400 leading-none mb-1">{fmt(franchise?.networth)}</p>
@@ -246,20 +233,9 @@ const FranchiseDashboard = () => {
         </aside>
 
         {/* ── MAIN CONTENT ──────────────────────────────────────────────────── */}
-        {/*
-          Desktop: ml-[220px], pb-16 (clears bottom ticker)
-          Mobile:  ml-0, pt-4 (navbar spacer already added by Navbar component),
-                   pb-[120px] (clears bottom tab bar 56px + ticker 48px + gap)
-        */}
-        <main className="
-          lg:ml-[220px]
-          px-4 sm:px-6
-          pt-4 lg:pt-7
-          pb-[120px] lg:pb-16
-          min-h-screen
-        ">
+        <main className="lg:ml-[220px] px-4 sm:px-6 pt-4 lg:pt-7 pb-[120px] lg:pb-16 min-h-screen">
 
-          {/* Mobile purse bar — shows above content on small screens */}
+          {/* Mobile purse bar */}
           <div className="lg:hidden flex items-center justify-between bg-white/[0.03] border border-white/[0.06] rounded-xl px-4 py-3 mb-5">
             <div>
               <p className="font-bc text-[9px] text-white/30 tracking-[2px]">PURSE REMAINING</p>
@@ -318,8 +294,6 @@ const FranchiseDashboard = () => {
                   <div key={p.id} className={`bg-white/[0.02] border rounded-2xl overflow-hidden flex flex-col hover:-translate-y-1 hover:shadow-[0_16px_40px_rgba(0,0,0,0.5)] transition-all duration-200 ${
                     isMine ? 'border-green-400/30' : isSold ? 'border-red-500/20' : 'border-white/[0.07]'
                   }`}>
-
-                    {/* Card header */}
                     <div className={`px-5 pt-4 pb-3 border-b border-white/[0.05] ${isMine ? 'bg-green-500/[0.08]' : 'bg-white/[0.02]'}`}>
                       <div className="flex justify-between items-start mb-1">
                         <h3 className="font-bc text-xl font-black text-white tracking-tight leading-tight pr-2">{p.name}</h3>
@@ -331,8 +305,6 @@ const FranchiseDashboard = () => {
                       </div>
                       <p className="font-b text-xs text-white/40">{p.position} · 🌏 {p.country}</p>
                     </div>
-
-                    {/* Mini stats */}
                     <div className="grid grid-cols-3 bg-white/[0.04] px-5 py-2.5">
                       {[
                         { l: 'T20',  v: p.t20Runs       || 0     },
@@ -345,8 +317,6 @@ const FranchiseDashboard = () => {
                         </div>
                       ))}
                     </div>
-
-                    {/* Price + action */}
                     <div className="px-5 py-3.5 mt-auto">
                       <div className="flex justify-between items-center mb-3">
                         <div>
@@ -364,7 +334,6 @@ const FranchiseDashboard = () => {
                           </div>
                         )}
                       </div>
-
                       {isSold ? (
                         <div className={`font-bc text-center py-2.5 rounded-xl text-sm font-bold tracking-[1px] border ${
                           isMine
@@ -388,11 +357,7 @@ const FranchiseDashboard = () => {
           )}
         </main>
 
-        {/* ── MOBILE BOTTOM TAB BAR (hidden on lg+) ─────────────────────────── */}
-        {/*
-          Fixed at bottom, above the ticker (bottom-[48px]).
-          Height 56px. Provides navigation without any navbar overlap.
-        */}
+        {/* ── MOBILE BOTTOM TAB BAR ─────────────────────────────────────────── */}
         <nav className="lg:hidden fixed bottom-[48px] left-0 right-0 z-40 bg-[#04091c] border-t border-white/[0.08] flex items-stretch h-[56px]">
           {navItems.map(item => (
             <button key={item.key} onClick={() => setView(item.key)}
@@ -411,14 +376,8 @@ const FranchiseDashboard = () => {
         </nav>
 
         {/* ── BOTTOM TICKER ─────────────────────────────────────────────────── */}
-        {/*
-          Desktop: fixed bottom-0, left-[220px] (clears sidebar)
-          Mobile:  fixed bottom-0, left-0 — sits below tab bar (tab bar is bottom-[48px])
-          Height: 48px
-        */}
         <footer className="fixed bottom-0 left-0 lg:left-[220px] right-0 h-[48px] bg-[#020814] border-t-2 border-yellow-400/30 flex items-center overflow-hidden z-30">
           <div className="inline-flex items-center whitespace-nowrap shrink-0" style={{ animation: 'marquee 30s linear infinite' }}>
-            {/* Duplicate for seamless loop */}
             {[...Array(2)].map((_, di) => (
               <span key={di} className="inline-flex items-center">
                 <span className="font-bc bg-yellow-400 text-black px-3 py-0.5 rounded text-[11px] font-black tracking-[2px] mx-6 shrink-0">

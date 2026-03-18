@@ -1,5 +1,7 @@
 import { useEffect, useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
+// ✅ LINE 1 ADDED HERE — import BidUrlBanner
+import BidUrlBanner from './BidUrlBanner';
 
 const fmt = (n) => `₹${Number(n || 0).toLocaleString('en-IN')}`;
 
@@ -142,6 +144,12 @@ const AuctionDashboard = () => {
             </button>
           </div>
         </header>
+
+        {/* ✅ LINE 2 ADDED HERE — BidUrlBanner shown right after header, before sold ticker */}
+        <BidUrlBanner
+          franchiseId={franchiseId}
+          franchiseName={franchiseName}
+        />
 
         {/* Sold Ticker */}
         {soldPlayers.length > 0 && (
